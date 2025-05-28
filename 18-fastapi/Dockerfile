@@ -1,46 +1,54 @@
+# Odoo18-fastapi Dockerfile
+# Deskripsi: Dockerfile untuk menjalankan Odoo 18 dengan FastAPI di dalam container Docker
+# NOTE: Odoo dijalankan di dalam virtual environment Python untuk isolasi dependensi
+
 FROM ubuntu:noble
-MAINTAINER Odoo S.A. <info@odoo.com>
+
+LABEL maintainer="aris.new2011@gmail.com"
 
 SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
 
 # Generate locale C.UTF-8 for postgres and general locale data
-ENV LANG en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 # Retrieve the target architecture to install the correct wkhtmltopdf package
 ARG TARGETARCH
 
-# Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
+# Variabel lingkungan
+ENV ODOO_VERSION=18.0 \
+    VENV_PATH=/opt/odoo/venv \
+    ODOO_HOME=/opt/odoo \
+    ADDONS_PATH=/mnt/extra-addons \
+    ENTERPRISE_PATH=/mnt/enterprise-addons \
+    DATA_PATH=/var/lib/odoo \
+    CONFIG_PATH=/etc/odoo
 
+# Install dependencies, lessc and less-plugin-clean-css, and wkhtmltopdf
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y \
+        python3 \
+        python3-venv \
+        python3-pip \
+        git \
+        wget \
         ca-certificates \
         curl \
         dirmngr \
         fonts-noto-cjk \
         gnupg \
-        libssl-dev \
         node-less \
+        libpq-dev \
+        build-essential \
+        libxml2-dev \
+        libxslt1-dev \
+        libsasl2-dev \
+        libldap2-dev \
+        libssl-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libffi-dev \
         npm \
-        python3-magic \
-        python3-num2words \
-        python3-odf \
-        python3-pdfminer \
-        python3-pip \
-        python3-phonenumbers \
-        python3-pyldap \
-        python3-qrcode \
-        python3-renderpm \
-        python3-setuptools \
-        python3-slugify \
-        python3-vobject \
-        python3-watchdog \
-        python3-xlrd \
-        python3-xlwt \
-        python3-a2wsgi \
-        python3-ujson \
-        python3-jwt \
-        python3-fastapi \
         xz-utils && \
     if [ -z "${TARGETARCH}" ]; then \
         TARGETARCH="$(dpkg --print-architecture)"; \
@@ -56,7 +64,7 @@ RUN apt-get update && \
     && apt-get install -y --no-install-recommends ./wkhtmltox.deb \
     && rm -rf /var/lib/apt/lists/* wkhtmltox.deb
 
-# install latest postgresql-client
+# Install latest postgresql-client
 RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list \
     && GNUPGHOME="$(mktemp -d)" \
     && export GNUPGHOME \
@@ -73,36 +81,33 @@ RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main' > /etc/a
 # Install rtlcss (on Debian buster)
 RUN npm install -g rtlcss
 
-# Install Odoo
-ENV ODOO_VERSION 18.0
-ARG ODOO_RELEASE=20250526
-ARG ODOO_SHA=47935e731a7a3f64d9ba79d232d7726bed269858
-RUN curl -o odoo.deb -sSL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
-    && echo "${ODOO_SHA} odoo.deb" | sha1sum -c - \
-    && apt-get update \
-    && apt-get -y install --no-install-recommends ./odoo.deb \
-    && rm -rf /var/lib/apt/lists/* odoo.deb
+# make sure the directories exist
+RUN mkdir -p $ODOO_HOME $ADDONS_PATH $ENTERPRISE_PATH $DATA_PATH $CONFIG_PATH
 
-# Copy entrypoint script and Odoo configuration file
-COPY ./entrypoint.sh /
-COPY ./odoo.conf /etc/odoo/
+# Clone Odoo repository
+RUN git clone --depth 1 --branch $ODOO_VERSION https://github.com/odoo/odoo.git  $ODOO_HOME
 
-# Set permissions and Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
-RUN chown odoo /etc/odoo/odoo.conf \
-    && mkdir -p /mnt/extra-addons \
-    && chown -R odoo /mnt/extra-addons
-VOLUME ["/var/lib/odoo", "/mnt/extra-addons"]
+# Buat dan aktifkan virtual environment
+RUN python3 -m venv $VENV_PATH
+
+# Upgrade pip di dalam virtual environment
+RUN $VENV_PATH/bin/pip install --upgrade pip
+
+# Instal dependensi Odoo menggunakan requirements.txt di dalam virtual environment
+RUN $VENV_PATH/bin/pip install -r $ODOO_HOME/requirements.txt
+
+# Instal FastAPI versi terbaru dan lib lain di dalam virtual environment
+RUN $VENV_PATH/bin/pip install fastapi uvicorn packaging python-multipart pyjwt a2wsgi ujson parse-accept-language
+
+# Copy template konfigurasi Odoo
+COPY odoo.conf $CONFIG_PATH/odoo.conf
+
+VOLUME ["/var/lib/odoo", "/mnt/extra-addons", "/mnt/enterprise-addons"]
 
 # Expose Odoo services
 EXPOSE 8069 8071 8072
 
-# Set the default config file
-ENV ODOO_RC /etc/odoo/odoo.conf
+# NOTE tidak menggunakan entrypoint.sh, karena Odoo dijalankan langsung dari virtual environment
 
-COPY wait-for-psql.py /usr/local/bin/wait-for-psql.py
-
-# Set default user when running the container
-USER odoo
-
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["odoo"]
+# Jalankan Odoo menggunakan virtual environment
+CMD ["/bin/bash", "-c", "source $VENV_PATH/bin/activate && python /opt/odoo/odoo-bin -c $CONFIG_PATH/odoo.conf"]
