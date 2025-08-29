@@ -78,6 +78,9 @@ RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main' > /etc/a
     && rm -f /etc/apt/sources.list.d/pgdg.list \
     && rm -rf /var/lib/apt/lists/*
 
+# install libreoffice
+RUN apt-get update && apt-get install -y --no-install-recommends libreoffice
+
 # Install rtlcss (on Debian buster)
 RUN npm install -g rtlcss
 
@@ -98,6 +101,9 @@ RUN $VENV_PATH/bin/pip install -r $ODOO_HOME/requirements.txt
 
 # Instal FastAPI versi terbaru dan lib lain di dalam virtual environment
 RUN $VENV_PATH/bin/pip install fastapi uvicorn packaging python-multipart pyjwt a2wsgi ujson parse-accept-language
+
+# Install py3o.template py3o.formats
+RUN $VENV_PATH/bin/pip install py3o.template py3o.formats
 
 # Copy template konfigurasi Odoo
 COPY odoo.conf $CONFIG_PATH/odoo.conf
