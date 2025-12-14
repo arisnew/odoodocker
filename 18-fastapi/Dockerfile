@@ -105,6 +105,9 @@ RUN $VENV_PATH/bin/pip install fastapi uvicorn packaging python-multipart pyjwt 
 # Install py3o.template py3o.formats
 RUN $VENV_PATH/bin/pip install py3o.template py3o.formats
 
+# Install pyfcm sentry
+RUN $VENV_PATH/bin/pip install pyfcm sentry-sdk==2.22.0
+
 # Copy template konfigurasi Odoo
 COPY odoo.conf $CONFIG_PATH/odoo.conf
 
