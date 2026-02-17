@@ -110,7 +110,7 @@ RUN $VENV_PATH/bin/pip install pyfcm sentry-sdk==2.22.0
 
 # untuk fs_attachment
 # RUN $VENV_PATH/bin/pip install python_slugify fsspec>=2025.3.0 fsspec[s3] 
-RUN $VENV_PATH/bin/pip install python_slugify s3fs==2023.12.2 aiobotocore==2.7.0 botocore==1.31.64 fsspec==2023.12.2 boto3==1.31.64
+RUN $VENV_PATH/bin/pip install python_slugify s3fs==2024.6.1 aiobotocore==2.12.3 botocore==1.34.69 fsspec==2024.6.1
 
 # Copy template konfigurasi Odoo
 COPY odoo.conf $CONFIG_PATH/odoo.conf
