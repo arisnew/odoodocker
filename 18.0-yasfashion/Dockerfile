@@ -100,7 +100,7 @@ RUN $VENV_PATH/bin/pip install --upgrade pip
 RUN $VENV_PATH/bin/pip install -r $ODOO_HOME/requirements.txt
 
 # Install py3o.template py3o.formats
-RUN $VENV_PATH/bin/pip install py3o.template py3o.formats
+RUN $VENV_PATH/bin/pip install packaging py3o.template py3o.formats
 
 # Install qifparse 
 RUN $VENV_PATH/bin/pip install qifparse
