@@ -81,6 +81,9 @@ RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main' > /etc/a
 # install libreoffice
 RUN apt-get update && apt-get install -y --no-install-recommends libreoffice
 
+# install libcairo2
+RUN apt-get install -y pkg-config libcairo2-dev
+
 # Install rtlcss (on Debian buster)
 RUN npm install -g rtlcss
 
@@ -104,6 +107,9 @@ RUN $VENV_PATH/bin/pip install packaging py3o.template py3o.formats
 
 # Install qifparse 
 RUN $VENV_PATH/bin/pip install qifparse
+
+# Install rlPyCairo 
+RUN $VENV_PATH/bin/pip install rlPyCairo
 
 # Copy template konfigurasi Odoo
 COPY odoo.conf $CONFIG_PATH/odoo.conf
