@@ -79,7 +79,14 @@ RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main' > /etc/a
     && rm -rf /var/lib/apt/lists/*
 
 # install libreoffice
-RUN apt-get update && apt-get install -y --no-install-recommends libreoffice
+# RUN apt-get update && apt-get install -y --no-install-recommends libreoffice
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libreoffice \
+    fonts-crosextra-carlito \
+    fonts-crosextra-caladea \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/* \
+    && fc-cache -f -v
 
 # Install rtlcss (on Debian buster)
 RUN npm install -g rtlcss
